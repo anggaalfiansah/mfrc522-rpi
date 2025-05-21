@@ -74,24 +74,25 @@ class MFRC522 {
   /**
    * Alert card holder that the card has been read.
    */
-  alert() {
-    if (this.buzzer_pin) {
+alert() {
+  if (this.buzzer_pin) {
+    setTimeout(() => {
+      this.buzzer_pin.digitalWrite(1);
       setTimeout(() => {
-        this.buzzer_pin.digitalWrite(1);
-        setTimeout(() => {
-          this.buzzer_pin.digitalWrite(0);
-          BUZZERCount++;
-          if (BUZZERCount == 3) {
-            BUZZERCount = 1;
-            isCycleEnded = true;
-          } else {
-            isCycleEnded = false;
-            this.alert();
-          }
-        }, 80);
-      }, 180);
-    }
+        this.buzzer_pin.digitalWrite(0);
+        BUZZERCount++;
+        if (BUZZERCount == 3) {
+          BUZZERCount = 1;
+          isCycleEnded = true;
+        } else {
+          isCycleEnded = false;
+          this.alert();
+        }
+      }, 80);
+    }, 180);
   }
+}
+
 
 
   /**
@@ -144,6 +145,7 @@ class MFRC522 {
       this.setRegisterBitMask(CMD.TxControlReg, 0x03);
     }
   }
+
 
   /**
    *
@@ -249,9 +251,7 @@ class MFRC522 {
       this.writeRegister(CMD.BitFramingReg, 0x07);
       const tagType = [CMD.PICC_REQIDL];
       let response = this.toCard(CMD.PCD_TRANSCEIVE, tagType);
-      if (response.bitSize != 0x10) {
-        response.status = ERROR;
-      }
+      
       return { status: response.status, bitSize: response.bitSize };
     }
     return { status: null, bitSize: null };
