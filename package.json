@@ -26,6 +26,6 @@
   },
   "dependencies": {
     "rpi-softspi": "^1.0.5",
-    "rpio": "^1.3.0"
+    "pigpio": "^3.3.1"
   }
 }

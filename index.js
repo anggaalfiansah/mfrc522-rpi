@@ -1,6 +1,6 @@
 "use strict";
 const CMD = require("./commands");
-const rpio = require("rpio");
+const { Gpio } = require("pigpio");
 const OK = true;
 const ERROR = false;
 let BUZZERCount = 1;
@@ -22,31 +22,24 @@ class MFRC522 {
 
   setResetPin(pin = 22) {
     if (!pin) {
-      throw new Error(
-        "Invalid parameter! reset pin parameter is invalid or not provided!"
-      );
+      throw new Error("Invalid parameter! reset pin parameter is invalid or not provided!");
     }
-    this.reset_pin = pin;
-    // Hold RESET pin low for 50ms to hard reset the reader
-    rpio.open(this.reset_pin, rpio.OUTPUT, rpio.LOW);
-    setTimeout(function() {
-          rpio.write(this.reset_pin, rpio.HIGH);
-    }.bind(this), 50);
+    this.reset_pin = new Gpio(pin, { mode: Gpio.OUTPUT });
+    this.reset_pin.digitalWrite(0);
+    setTimeout(() => {
+      this.reset_pin.digitalWrite(1);
+    }, 50);
+    return this;
+  }
+  setBuzzerPin(pin) {
+    if (!pin) {
+      throw new Error("Invalid parameter! buzzer pin parameter is invalid or not provided!");
+    }
+    this.buzzer_pin = new Gpio(pin, { mode: Gpio.OUTPUT });
+    this.buzzer_pin.digitalWrite(0);
     return this;
   }
 
-  setBuzzerPin(pin) {
-    // Set Alert mode and initial value.
-    if (!pin) {
-      throw new Error(
-        "Invalid parameter! buzzer pin parameter is invalid or not provided!"
-      );
-    }
-    this.buzzer_pin = pin;
-    rpio.open(this.buzzer_pin, rpio.OUTPUT);
-    rpio.write(this.buzzer_pin, rpio.LOW);
-    return this;
-  }
 
   /**
    * Initializes the MFRC522 chip.
@@ -84,9 +77,9 @@ class MFRC522 {
   alert() {
     if (this.buzzer_pin) {
       setTimeout(() => {
-        rpio.write(this.buzzer_pin, 1);
+        this.buzzer_pin.digitalWrite(1);
         setTimeout(() => {
-          rpio.write(this.buzzer_pin, 0);
+          this.buzzer_pin.digitalWrite(0);
           BUZZERCount++;
           if (BUZZERCount == 3) {
             BUZZERCount = 1;
@@ -99,6 +92,7 @@ class MFRC522 {
       }, 180);
     }
   }
+
 
   /**
    * Reads a bit from the specified register in the MFRC522 chip.
@@ -236,26 +230,6 @@ class MFRC522 {
       }
     }
     return { status: status, data: data, bitSize: bitSize };
-  }
-
-  /**
-   * Alert card holder that the card has been read.
-   */
-  static alert() {
-    setTimeout(() => {
-      WiringPi.digitalWrite(BUZZER, 1);
-      setTimeout(() => {
-        WiringPi.digitalWrite(BUZZER, 0);
-        BUZZERCount++;
-        if (BUZZERCount == 3) {
-          BUZZERCount = 1;
-          isCycleEnded = true;
-        } else {
-          isCycleEnded = false;
-          this.alert();
-        }
-      }, 80);
-    }, 180);
   }
 
   /**
@@ -413,11 +387,11 @@ class MFRC522 {
     if (!response.status) {
       console.log(
         "Error while reading! Status: " +
-          response.status +
-          " Data: " +
-          response.data +
-          " BitSize: " +
-          response.bitSize
+        response.status +
+        " Data: " +
+        response.data +
+        " BitSize: " +
+        response.bitSize
       );
     }
     return response.data;
@@ -440,11 +414,11 @@ class MFRC522 {
     ) {
       console.log(
         "Error while writing! Status: " +
-          response.status +
-          " Data: " +
-          response.data +
-          " BitSize: " +
-          response.bitSize
+        response.status +
+        " Data: " +
+        response.data +
+        " BitSize: " +
+        response.bitSize
       );
       response.status = ERROR;
     }
@@ -492,9 +466,9 @@ class MFRC522 {
       const offset = 3 - (address % 4);
       console.log(
         "Error: Chosen block is not a sector trailer! " +
-          "Please write authentication key to block " +
-          (address + offset) +
-          "!"
+        "Please write authentication key to block " +
+        (address + offset) +
+        "!"
       );
       return false;
     }
